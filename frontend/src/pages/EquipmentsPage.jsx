@@ -123,7 +123,7 @@ export default function EquipmentsPage() {
 
       {/* Inline Detail Panel */}
       {selected && (
-        <div style={{ margin: "0 24px 24px" }}>
+        <div style={{ margin: "0 24px 24px" }} ref={(el) => el?.scrollIntoView({ behavior: "smooth", block: "start" })}>
           <EquipmentDetailModal equipment={selected} onClose={() => setSelected(null)} />
         </div>
       )}

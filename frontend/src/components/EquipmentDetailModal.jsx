@@ -1,4 +1,7 @@
-import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  RadialBarChart, RadialBar, PolarAngleAxis,
+} from "recharts";
 
 export default function EquipmentDetailModal({ equipment, onClose }) {
   if (!equipment) return null;
@@ -11,174 +14,181 @@ export default function EquipmentDetailModal({ equipment, onClose }) {
   } = equipment;
 
   const isOnline = MachineStatus?.Status === "ONLINE";
-  const statusColor = isOnline ? "#22c55e" : "#ef4444";
+  const isRunning = EngineStatus?.Running;
+  const oilTemp = HydraulicOilTemperature?.Temperature ?? 0;
+  const oilPressure = HydraulicOilPressure?.Pressure ?? 0;
+  const opHours = CumulativeOperatingHours?.Hour ?? 0;
+  const pumped = CumulativePumpedTotals?.Pumped ?? 0;
+  const strokes = (CumulativeStrokesTotals?.Strokes ?? 0) / 1000;
+  const speed = MaximumSpeedLast24?.Speed ?? 0;
 
-  const tempVal = HydraulicOilTemperature?.Temperature ?? 0;
-  const pressureVal = HydraulicOilPressure?.Pressure ?? 0;
-  const speedVal = MaximumSpeedLast24?.Speed ?? 0;
-  const hoursVal = CumulativeOperatingHours?.Hour ?? 0;
-  const pumpedVal = CumulativePumpedTotals?.Pumped ?? 0;
-  const strokesVal = CumulativeStrokesTotals?.Strokes ?? 0;
-
-  const radialData = [
-    { name: "Temp", value: Math.min((tempVal / 120) * 100, 100), fill: "#f97316" },
-    { name: "Pressure", value: Math.min((pressureVal / 400) * 100, 100), fill: "#3b82f6" },
-    { name: "Speed", value: Math.min((speedVal / 120) * 100, 100), fill: "#a855f7" },
+  const kpis = [
+    { icon: "⏱", value: opHours.toFixed(1), unit: "hrs", label: "Operating Hours", color: "#6366f1" },
+    { icon: "💧", value: pumped.toFixed(0), unit: "m³", label: "Total Pumped", color: "#22c55e" },
+    { icon: "🔄", value: strokes.toFixed(1), unit: "k strokes", label: "Total Strokes", color: "#f97316" },
+    { icon: "🚗", value: speed, unit: "kilometres", label: "Max Speed (24h)", color: "#a855f7" },
   ];
 
   const barData = [
-    { name: "Op. Hours", value: parseFloat(hoursVal.toFixed(1)), fill: "#3b82f6" },
-    { name: "Pumped (m³)", value: parseFloat(pumpedVal.toFixed(1)), fill: "#22c55e" },
-    { name: "Strokes (k)", value: parseFloat((strokesVal / 1000).toFixed(1)), fill: "#f97316" },
+    { name: "Op. Hours", value: opHours },
+    { name: "Pumped (m³)", value: pumped },
+    { name: "Strokes (k)", value: strokes },
   ];
 
-  const StatCard = ({ icon, label, value, unit, color }) => (
-    <div style={{ ...styles.statCard, borderTop: `3px solid ${color}` }}>
-      <div style={styles.statIcon}>{icon}</div>
-      <div style={{ ...styles.statValue, color }}>{value ?? "—"}</div>
-      <div style={styles.statUnit}>{unit}</div>
-      <div style={styles.statLabel}>{label}</div>
-    </div>
-  );
+  const tempPct = Math.min((oilTemp / 120) * 100, 100);
+  const pressurePct = Math.min((oilPressure / 400) * 100, 100);
+  const speedPct = Math.min((speed / 120) * 100, 100);
+
+  const gaugeData = [
+    { name: "Temp", value: tempPct, fill: "#f97316" },
+    { name: "Pressure", value: pressurePct, fill: "#6366f1" },
+    { name: "Speed", value: speedPct, fill: "#a855f7" },
+  ];
+
+  const statusCards = [
+    { icon: "⚙️", label: "ENGINE", value: isRunning ? "Running" : "Stopped", valueColor: isRunning ? "#16a34a" : "#dc2626", sub: EngineStatus?.datetime ? new Date(EngineStatus.datetime).toLocaleString() : "—" },
+    { icon: "🖥", label: "MACHINE STATUS", value: MachineStatus?.Status ?? "—", valueColor: isOnline ? "#16a34a" : "#dc2626", sub: MachineStatus?.datetime ? new Date(MachineStatus.datetime).toLocaleString() : "—" },
+    { icon: "📍", label: "LAST LOCATION UPDATE", value: Location?.datetime ? new Date(Location.datetime).toLocaleDateString() : "—", valueColor: "#1e293b", sub: Location?.datetime ? new Date(Location.datetime).toLocaleTimeString() : "" },
+    { icon: "💾", label: "SOFTWARE", value: Software?.Version ? `V ${Software.Version}` : "—", valueColor: "#1e293b", sub: Software?.Interface ?? "" },
+  ];
 
   return (
-    <div style={styles.panel}>
-
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.modelBadge}>{h.OEMName}</div>
-          <div style={styles.modelName}>{h.Model}</div>
-          <div style={styles.serialNo}>S/N: {h.SerialNumber}</div>
+    <div style={s.panel}>
+      {/* Title bar */}
+      <div style={s.titleBar}>
+        <div style={s.titleLeft}>
+          <span style={s.serialChip}>{h.SerialNumber}</span>
+          <span style={s.tags}>{h.OEMName} · {h.Model}</span>
+          <span style={{ ...s.statusChip, background: isOnline ? "#dcfce7" : "#fee2e2", color: isOnline ? "#16a34a" : "#dc2626", border: `1px solid ${isOnline ? "#86efac" : "#fca5a5"}` }}>
+            <span style={{ ...s.dot, background: isOnline ? "#16a34a" : "#dc2626" }} />
+            {MachineStatus?.Status ?? "UNKNOWN"}
+          </span>
         </div>
-        <div style={styles.headerRight}>
-          <div style={{ ...styles.statusPill, background: isOnline ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${statusColor}` }}>
-            <span style={{ ...styles.statusDot, background: statusColor }} />
-            <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>{MachineStatus?.Status ?? "UNKNOWN"}</span>
-          </div>
-          <div style={styles.softwareTag}>{Software?.Interface} · {Software?.Version}</div>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
-        </div>
+        <button style={s.closeBtn} onClick={onClose}>✕ Close</button>
       </div>
 
-      <div style={styles.body}>
-
-        {/* Stat Cards Row */}
-        <div style={styles.statsRow}>
-          <StatCard icon="🕐" label="Operating Hours" value={hoursVal.toFixed(1)} unit="hrs" color="#3b82f6" />
-          <StatCard icon="💧" label="Total Pumped" value={pumpedVal.toFixed(0)} unit={CumulativePumpedTotals?.PumpedUnits ?? "m³"} color="#22c55e" />
-          <StatCard icon="🔁" label="Total Strokes" value={(strokesVal / 1000).toFixed(1)} unit="k strokes" color="#f97316" />
-          <StatCard icon="🚗" label="Max Speed (24h)" value={speedVal} unit={MaximumSpeedLast24?.SpeedUnits?.split(" ")[0] ?? "km/h"} color="#a855f7" />
+      <div style={s.body}>
+        {/* KPI Cards */}
+        <div style={s.kpiRow}>
+          {kpis.map((k) => (
+            <div key={k.label} style={{ ...s.kpiCard, borderTop: `3px solid ${k.color}` }}>
+              <div style={{ fontSize: 28 }}>{k.icon}</div>
+              <div style={{ ...s.kpiValue, color: k.color }}>{k.value}</div>
+              <div style={s.kpiUnit}>{k.unit}</div>
+              <div style={s.kpiLabel}>{k.label}</div>
+            </div>
+          ))}
         </div>
 
-        {/* Charts Row */}
-        <div style={styles.chartsRow}>
-
-          {/* Radial Gauges */}
-          <div style={styles.chartCard}>
-            <div style={styles.chartTitle}>⚡ Live Metrics</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={radialData} startAngle={180} endAngle={0}>
-                <RadialBar dataKey="value" cornerRadius={6} background={{ fill: "#f0f0f0" }} />
-                <Tooltip formatter={(v, n) => [`${v.toFixed(1)}%`, n]} />
+        {/* Middle row */}
+        <div style={s.midRow}>
+          {/* Live Metrics Gauge */}
+          <div style={s.card}>
+            <div style={s.cardTitle}>⚡ LIVE METRICS</div>
+            <ResponsiveContainer width="100%" height={160}>
+              <RadialBarChart
+                cx="50%" cy="85%" innerRadius="40%" outerRadius="100%"
+                startAngle={180} endAngle={0}
+                data={gaugeData}
+              >
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#f1f5f9" }} />
               </RadialBarChart>
             </ResponsiveContainer>
-            <div style={styles.radialLegend}>
-              {radialData.map((d) => (
-                <div key={d.name} style={styles.legendItem}>
-                  <span style={{ ...styles.legendDot, background: d.fill }} />
-                  <span style={styles.legendText}>{d.name}: {d.value.toFixed(1)}%</span>
-                </div>
+            <div style={s.gaugeLegend}>
+              {gaugeData.map((g) => (
+                <span key={g.name} style={s.legendItem}>
+                  <span style={{ ...s.legendDot, background: g.fill }} />
+                  {g.name}: {g.value.toFixed(1)}%
+                </span>
               ))}
             </div>
           </div>
 
-          {/* Bar Chart */}
-          <div style={styles.chartCard}>
-            <div style={styles.chartTitle}>📊 Cumulative Stats</div>
+          {/* Cumulative Stats Bar Chart */}
+          <div style={{ ...s.card, flex: 2 }}>
+            <div style={s.cardTitle}>📊 CUMULATIVE STATS</div>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {barData.map((entry, i) => (
-                    <rect key={i} fill={entry.fill} />
-                  ))}
-                </Bar>
+              <BarChart data={barData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid #e2e8f0" }}
+                  formatter={(v) => [v.toLocaleString(), "Value"]}
+                />
+                <Bar dataKey="value" fill="#22c55e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Hydraulics + Location */}
-          <div style={styles.chartCard}>
-            <div style={styles.chartTitle}>🌡️ Hydraulics</div>
-            <div style={styles.gaugeRow}>
-              <GaugeBar label="Oil Temp" value={tempVal} max={120} unit={HydraulicOilTemperature?.TemperatureUnits ?? "°C"} color="#f97316" />
-              <GaugeBar label="Oil Pressure" value={pressureVal} max={400} unit={HydraulicOilPressure?.PressureUnits ?? "bar"} color="#3b82f6" />
+          <div style={s.rightCol}>
+            <div style={s.card}>
+              <div style={s.cardTitle}>🌡 HYDRAULICS</div>
+              <div style={s.metricRow}>
+                <span style={s.metricLabel}>Oil Temp</span>
+                <span style={{ ...s.metricValue, color: oilTemp > 80 ? "#dc2626" : "#f97316" }}>
+                  {oilTemp} {HydraulicOilTemperature?.TemperatureUnits ?? "°C"}
+                </span>
+              </div>
+              <div style={s.progressTrack}>
+                <div style={{ ...s.progressFill, width: `${tempPct}%`, background: oilTemp > 80 ? "#dc2626" : "#f97316" }} />
+              </div>
+              <div style={{ ...s.metricRow, marginTop: 10 }}>
+                <span style={s.metricLabel}>Oil Pressure</span>
+                <span style={{ ...s.metricValue, color: "#6366f1" }}>
+                  {oilPressure} {HydraulicOilPressure?.PressureUnits ?? "bar"}
+                </span>
+              </div>
+              <div style={s.progressTrack}>
+                <div style={{ ...s.progressFill, width: `${pressurePct}%`, background: "#6366f1" }} />
+              </div>
             </div>
-            <div style={styles.chartTitle}>📍 Location</div>
-            <div style={styles.locationBox}>
-              <div style={styles.locRow}><span style={styles.locLabel}>Latitude</span><span style={styles.locVal}>{Location?.Latitude?.toFixed(6) ?? "—"}</span></div>
-              <div style={styles.locRow}><span style={styles.locLabel}>Longitude</span><span style={styles.locVal}>{Location?.Longitude?.toFixed(6) ?? "—"}</span></div>
-              {Location && (
-                <a href={`https://maps.google.com/?q=${Location.Latitude},${Location.Longitude}`} target="_blank" rel="noreferrer" style={styles.mapBtn}>
-                  🗺️ Open in Maps
+
+            {Location && (
+              <div style={s.card}>
+                <div style={s.cardTitle}>📍 LOCATION</div>
+                <div style={s.locRow}><span style={s.locLabel}>Latitude</span><span style={s.locVal}>{Location.Latitude?.toFixed(6)}</span></div>
+                <div style={s.locRow}><span style={s.locLabel}>Longitude</span><span style={s.locVal}>{Location.Longitude?.toFixed(6)}</span></div>
+                <a
+                  href={`https://maps.google.com/?q=${Location.Latitude},${Location.Longitude}`}
+                  target="_blank" rel="noreferrer"
+                  style={s.mapBtn}
+                >
+                  🗺 Open in Maps
                 </a>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Engine + Status Row */}
-        <div style={styles.infoRow}>
-          <div style={styles.infoCard}>
-            <div style={styles.infoIcon}>⚙️</div>
-            <div style={styles.infoLabel}>Engine</div>
-            <div style={{ ...styles.infoValue, color: EngineStatus?.Running ? "#22c55e" : "#ef4444" }}>
-              {EngineStatus?.Running ? "Running" : "Stopped"}
+        {/* Status Cards */}
+        <div style={s.statusRow}>
+          {statusCards.map((c) => (
+            <div key={c.label} style={s.statusCard}>
+              <div style={s.statusIcon}>{c.icon}</div>
+              <div style={s.statusLabel}>{c.label}</div>
+              <div style={{ ...s.statusValue, color: c.valueColor }}>{c.value}</div>
+              <div style={s.statusSub}>{c.sub}</div>
             </div>
-            <div style={styles.infoSub}>{EngineStatus?.datetime ? new Date(EngineStatus.datetime).toLocaleString() : "—"}</div>
-          </div>
-          <div style={styles.infoCard}>
-            <div style={styles.infoIcon}>🖥️</div>
-            <div style={styles.infoLabel}>Machine Status</div>
-            <div style={{ ...styles.infoValue, color: statusColor }}>{MachineStatus?.Status ?? "—"}</div>
-            <div style={styles.infoSub}>{MachineStatus?.datetime ? new Date(MachineStatus.datetime).toLocaleString() : "—"}</div>
-          </div>
-          <div style={styles.infoCard}>
-            <div style={styles.infoIcon}>📍</div>
-            <div style={styles.infoLabel}>Last Location Update</div>
-            <div style={styles.infoValue}>{Location?.datetime ? new Date(Location.datetime).toLocaleDateString() : "—"}</div>
-            <div style={styles.infoSub}>{Location?.datetime ? new Date(Location.datetime).toLocaleTimeString() : ""}</div>
-          </div>
-          <div style={styles.infoCard}>
-            <div style={styles.infoIcon}>💾</div>
-            <div style={styles.infoLabel}>Software</div>
-            <div style={styles.infoValue}>{Software?.Version ?? "—"}</div>
-            <div style={styles.infoSub}>{Software?.Interface}</div>
-          </div>
+          ))}
         </div>
 
         {/* Caution Messages */}
         {CautionMessages?.CautionDescription?.length > 0 && (
-          <div style={styles.cautionSection}>
-            <div style={styles.cautionHeader}>⚠️ Caution Messages <span style={styles.cautionCount}>{CautionMessages.CautionDescription.length}</span></div>
-            <div style={styles.timeline}>
-              {CautionMessages.CautionDescription.map((c, i) => (
-                <div key={i} style={styles.timelineItem}>
-                  <div style={styles.timelineDot} />
-                  <div style={styles.timelineContent}>
-                    <div style={styles.timelineTop}>
-                      <span style={styles.cautionId}>#{c.Identifier}</span>
-                      <span style={styles.cautionDate}>{c.datetime}</span>
-                    </div>
-                    <div style={styles.cautionDesc}>{c.Description}</div>
-                  </div>
-                </div>
-              ))}
+          <div style={s.cautionWrap}>
+            <div style={s.cautionTitle}>
+              ⚠️ CAUTION MESSAGES
+              <span style={s.cautionBadge}>{CautionMessages.CautionDescription.length}</span>
             </div>
+            {CautionMessages.CautionDescription.map((c, i) => (
+              <div key={i} style={{ ...s.cautionRow, background: i % 2 === 0 ? "#fff" : "#fffbeb" }}>
+                <span style={s.cautionId}>#{c.Identifier}</span>
+                <span style={s.cautionDesc}>{c.Description}</span>
+                <span style={s.cautionDate}>{c.datetime}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -186,68 +196,62 @@ export default function EquipmentDetailModal({ equipment, onClose }) {
   );
 }
 
-function GaugeBar({ label, value, max, unit, color }) {
-  const pct = Math.min((value / max) * 100, 100);
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: "#666" }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color }}>{value} {unit}</span>
-      </div>
-      <div style={{ background: "#f0f0f0", borderRadius: 6, height: 10, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, background: color, height: "100%", borderRadius: 6, transition: "width 0.6s ease" }} />
-      </div>
-    </div>
-  );
-}
-
-const styles = {
-  panel: { background: "#f8fafc", borderRadius: 16, width: "100%", boxShadow: "0 4px 24px rgba(0,0,0,0.10)", border: "1px solid #e5e9ef" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 28px", background: "#0178d2", borderRadius: "16px 16px 0 0" },
-  headerLeft: {},
-  headerRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 },
-  modelBadge: { fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
-  modelName: { fontSize: 22, fontWeight: 800, color: "#fff" },
-  serialNo: { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  statusPill: { display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20 },
-  statusDot: { width: 8, height: 8, borderRadius: "50%" },
-  softwareTag: { fontSize: 11, color: "rgba(255,255,255,0.7)" },
-  closeBtn: { background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: 15 },
+const s = {
+  panel: { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", fontFamily: "'Segoe UI', Arial, sans-serif", boxShadow: "0 4px 24px rgba(0,0,0,0.10)" },
+  titleBar: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px", borderBottom: "2px solid #e2e8f0", background: "#fff" },
+  titleLeft: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
+  serialChip: { fontWeight: 700, fontSize: 15, color: "#1e293b" },
+  tags: { fontSize: 12, color: "#64748b", background: "#f1f5f9", padding: "3px 10px", borderRadius: 4, border: "1px solid #e2e8f0" },
+  statusChip: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4 },
+  dot: { width: 7, height: 7, borderRadius: "50%", display: "inline-block" },
+  closeBtn: { background: "none", border: "1px solid #e2e8f0", color: "#64748b", padding: "5px 14px", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 600 },
   body: { padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 },
-  statsRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 },
-  statCard: { background: "#fff", borderRadius: 10, padding: "14px 16px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  statIcon: { fontSize: 22, marginBottom: 6 },
-  statValue: { fontSize: 22, fontWeight: 800 },
-  statUnit: { fontSize: 11, color: "#999", marginTop: 2 },
-  statLabel: { fontSize: 11, color: "#666", marginTop: 4 },
-  chartsRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
-  chartCard: { background: "#fff", borderRadius: 10, padding: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  chartTitle: { fontSize: 12, fontWeight: 700, color: "#0178d2", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
-  radialLegend: { display: "flex", justifyContent: "center", gap: 12, marginTop: 8 },
-  legendItem: { display: "flex", alignItems: "center", gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: "50%" },
-  legendText: { fontSize: 11, color: "#555" },
-  gaugeRow: { marginBottom: 12 },
-  locationBox: { background: "#f8fafc", borderRadius: 8, padding: "10px 12px" },
-  locRow: { display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f0f0f0" },
-  locLabel: { fontSize: 12, color: "#888" },
-  locVal: { fontSize: 12, fontWeight: 600, color: "#333" },
-  mapBtn: { display: "block", textAlign: "center", marginTop: 10, padding: "7px", background: "#0178d2", color: "#fff", borderRadius: 6, fontSize: 12, textDecoration: "none", fontWeight: 600 },
-  infoRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 },
-  infoCard: { background: "#fff", borderRadius: 10, padding: "14px 16px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  infoIcon: { fontSize: 20, marginBottom: 6 },
-  infoLabel: { fontSize: 11, color: "#999", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 },
-  infoValue: { fontSize: 15, fontWeight: 700, color: "#222" },
-  infoSub: { fontSize: 11, color: "#aaa", marginTop: 3 },
-  cautionSection: { background: "#fff", borderRadius: 10, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  cautionHeader: { fontSize: 13, fontWeight: 700, color: "#0178d2", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 },
-  cautionCount: { background: "#0178d2", color: "#fff", borderRadius: 10, padding: "1px 8px", fontSize: 11 },
-  timeline: { display: "flex", flexDirection: "column", gap: 0 },
-  timelineItem: { display: "flex", gap: 12, paddingBottom: 14, borderLeft: "2px solid #ffe0b2", marginLeft: 8, paddingLeft: 16, position: "relative" },
-  timelineDot: { position: "absolute", left: -6, top: 4, width: 10, height: 10, borderRadius: "50%", background: "#ff9800", border: "2px solid #fff" },
-  timelineContent: { flex: 1 },
-  timelineTop: { display: "flex", justifyContent: "space-between", marginBottom: 4 },
-  cautionId: { background: "#ff9800", color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700 },
-  cautionDate: { fontSize: 11, color: "#999" },
-  cautionDesc: { fontSize: 13, color: "#444" },
+
+  // KPI
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 },
+  kpiCard: { background: "#fff", borderRadius: 10, padding: "16px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
+  kpiValue: { fontSize: 28, fontWeight: 800, lineHeight: 1.1 },
+  kpiUnit: { fontSize: 11, color: "#94a3b8", fontWeight: 500 },
+  kpiLabel: { fontSize: 12, color: "#64748b", fontWeight: 600, textAlign: "center", marginTop: 2 },
+
+  // Middle
+  midRow: { display: "grid", gridTemplateColumns: "1fr 2fr 1.2fr", gap: 14 },
+  card: { background: "#fff", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)" },
+  cardTitle: { fontSize: 11, fontWeight: 800, color: "#0178d2", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 },
+
+  // Gauge legend
+  gaugeLegend: { display: "flex", flexDirection: "column", gap: 4, marginTop: 6 },
+  legendItem: { fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: "50%", display: "inline-block" },
+
+  // Right col
+  rightCol: { display: "flex", flexDirection: "column", gap: 14 },
+  metricRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  metricLabel: { fontSize: 12, color: "#64748b", fontWeight: 500 },
+  metricValue: { fontSize: 13, fontWeight: 700 },
+  progressTrack: { height: 6, background: "#f1f5f9", borderRadius: 4, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 4, transition: "width 0.4s" },
+
+  // Location
+  locRow: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f1f5f9" },
+  locLabel: { fontSize: 12, color: "#64748b" },
+  locVal: { fontSize: 13, fontWeight: 600, color: "#1e293b" },
+  mapBtn: { display: "block", marginTop: 10, background: "#0178d2", color: "#fff", textAlign: "center", padding: "7px 0", borderRadius: 6, fontSize: 12, fontWeight: 600, textDecoration: "none" },
+
+  // Status cards
+  statusRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 },
+  statusCard: { background: "#fff", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)", textAlign: "center" },
+  statusIcon: { fontSize: 22, marginBottom: 4 },
+  statusLabel: { fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.8 },
+  statusValue: { fontSize: 16, fontWeight: 800, margin: "4px 0 2px" },
+  statusSub: { fontSize: 10, color: "#94a3b8" },
+
+  // Caution
+  cautionWrap: { borderRadius: 10, overflow: "hidden", border: "1px solid #fde68a" },
+  cautionTitle: { display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", fontSize: 11, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.8, background: "#fef3c7", borderBottom: "1px solid #fde68a" },
+  cautionBadge: { background: "#f59e0b", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11 },
+  cautionRow: { display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid #fde68a" },
+  cautionId: { background: "#f59e0b", color: "#fff", borderRadius: 3, padding: "1px 7px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" },
+  cautionDesc: { fontSize: 13, color: "#78350f", flex: 1 },
+  cautionDate: { fontSize: 11, color: "#a16207", whiteSpace: "nowrap" },
 };
