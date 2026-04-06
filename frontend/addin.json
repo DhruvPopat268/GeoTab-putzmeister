@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "items": [
         {
-            "url": "https://YOUR_HOSTED_URL/index.html",
+            "url": "https://geo-tab-putzmeister.vercel.app/index.html",
             "path": "ActivityLink/",
             "menuName": {
                 "en": "Putzmeister"
