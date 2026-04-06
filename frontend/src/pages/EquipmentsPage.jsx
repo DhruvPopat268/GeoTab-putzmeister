@@ -121,7 +121,12 @@ export default function EquipmentsPage() {
         <button style={{ ...styles.pageBtn, opacity: !hasNext ? 1  : 1 }}  onClick={() => setPage((p) => p + 1)}>Next →</button>
       </div>
 
-      <EquipmentDetailModal equipment={selected} onClose={() => setSelected(null)} />
+      {/* Inline Detail Panel */}
+      {selected && (
+        <div style={{ margin: "0 24px 24px" }}>
+          <EquipmentDetailModal equipment={selected} onClose={() => setSelected(null)} />
+        </div>
+      )}
     </div>
   );
 }

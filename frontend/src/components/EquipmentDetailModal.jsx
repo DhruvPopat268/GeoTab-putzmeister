@@ -42,147 +42,145 @@ export default function EquipmentDetailModal({ equipment, onClose }) {
   );
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div style={styles.panel}>
 
-        {/* Header */}
-        <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <div style={styles.modelBadge}>{h.OEMName}</div>
-            <div style={styles.modelName}>{h.Model}</div>
-            <div style={styles.serialNo}>S/N: {h.SerialNumber}</div>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.modelBadge}>{h.OEMName}</div>
+          <div style={styles.modelName}>{h.Model}</div>
+          <div style={styles.serialNo}>S/N: {h.SerialNumber}</div>
+        </div>
+        <div style={styles.headerRight}>
+          <div style={{ ...styles.statusPill, background: isOnline ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${statusColor}` }}>
+            <span style={{ ...styles.statusDot, background: statusColor }} />
+            <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>{MachineStatus?.Status ?? "UNKNOWN"}</span>
           </div>
-          <div style={styles.headerRight}>
-            <div style={{ ...styles.statusPill, background: isOnline ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${statusColor}` }}>
-              <span style={{ ...styles.statusDot, background: statusColor }} />
-              <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>{MachineStatus?.Status ?? "UNKNOWN"}</span>
+          <div style={styles.softwareTag}>{Software?.Interface} · {Software?.Version}</div>
+          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+      </div>
+
+      <div style={styles.body}>
+
+        {/* Stat Cards Row */}
+        <div style={styles.statsRow}>
+          <StatCard icon="🕐" label="Operating Hours" value={hoursVal.toFixed(1)} unit="hrs" color="#3b82f6" />
+          <StatCard icon="💧" label="Total Pumped" value={pumpedVal.toFixed(0)} unit={CumulativePumpedTotals?.PumpedUnits ?? "m³"} color="#22c55e" />
+          <StatCard icon="🔁" label="Total Strokes" value={(strokesVal / 1000).toFixed(1)} unit="k strokes" color="#f97316" />
+          <StatCard icon="🚗" label="Max Speed (24h)" value={speedVal} unit={MaximumSpeedLast24?.SpeedUnits?.split(" ")[0] ?? "km/h"} color="#a855f7" />
+        </div>
+
+        {/* Charts Row */}
+        <div style={styles.chartsRow}>
+
+          {/* Radial Gauges */}
+          <div style={styles.chartCard}>
+            <div style={styles.chartTitle}>⚡ Live Metrics</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={radialData} startAngle={180} endAngle={0}>
+                <RadialBar dataKey="value" cornerRadius={6} background={{ fill: "#f0f0f0" }} />
+                <Tooltip formatter={(v, n) => [`${v.toFixed(1)}%`, n]} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div style={styles.radialLegend}>
+              {radialData.map((d) => (
+                <div key={d.name} style={styles.legendItem}>
+                  <span style={{ ...styles.legendDot, background: d.fill }} />
+                  <span style={styles.legendText}>{d.name}: {d.value.toFixed(1)}%</span>
+                </div>
+              ))}
             </div>
-            <div style={styles.softwareTag}>{Software?.Interface} · {Software?.Version}</div>
-            <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          </div>
+
+          {/* Bar Chart */}
+          <div style={styles.chartCard}>
+            <div style={styles.chartTitle}>📊 Cumulative Stats</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {barData.map((entry, i) => (
+                    <rect key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Hydraulics + Location */}
+          <div style={styles.chartCard}>
+            <div style={styles.chartTitle}>🌡️ Hydraulics</div>
+            <div style={styles.gaugeRow}>
+              <GaugeBar label="Oil Temp" value={tempVal} max={120} unit={HydraulicOilTemperature?.TemperatureUnits ?? "°C"} color="#f97316" />
+              <GaugeBar label="Oil Pressure" value={pressureVal} max={400} unit={HydraulicOilPressure?.PressureUnits ?? "bar"} color="#3b82f6" />
+            </div>
+            <div style={styles.chartTitle}>📍 Location</div>
+            <div style={styles.locationBox}>
+              <div style={styles.locRow}><span style={styles.locLabel}>Latitude</span><span style={styles.locVal}>{Location?.Latitude?.toFixed(6) ?? "—"}</span></div>
+              <div style={styles.locRow}><span style={styles.locLabel}>Longitude</span><span style={styles.locVal}>{Location?.Longitude?.toFixed(6) ?? "—"}</span></div>
+              {Location && (
+                <a href={`https://maps.google.com/?q=${Location.Latitude},${Location.Longitude}`} target="_blank" rel="noreferrer" style={styles.mapBtn}>
+                  🗺️ Open in Maps
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
-        <div style={styles.body}>
-
-          {/* Stat Cards Row */}
-          <div style={styles.statsRow}>
-            <StatCard icon="🕐" label="Operating Hours" value={hoursVal.toFixed(1)} unit="hrs" color="#3b82f6" />
-            <StatCard icon="💧" label="Total Pumped" value={pumpedVal.toFixed(0)} unit={CumulativePumpedTotals?.PumpedUnits ?? "m³"} color="#22c55e" />
-            <StatCard icon="🔁" label="Total Strokes" value={(strokesVal / 1000).toFixed(1)} unit="k strokes" color="#f97316" />
-            <StatCard icon="🚗" label="Max Speed (24h)" value={speedVal} unit={MaximumSpeedLast24?.SpeedUnits?.split(" ")[0] ?? "km/h"} color="#a855f7" />
+        {/* Engine + Status Row */}
+        <div style={styles.infoRow}>
+          <div style={styles.infoCard}>
+            <div style={styles.infoIcon}>⚙️</div>
+            <div style={styles.infoLabel}>Engine</div>
+            <div style={{ ...styles.infoValue, color: EngineStatus?.Running ? "#22c55e" : "#ef4444" }}>
+              {EngineStatus?.Running ? "Running" : "Stopped"}
+            </div>
+            <div style={styles.infoSub}>{EngineStatus?.datetime ? new Date(EngineStatus.datetime).toLocaleString() : "—"}</div>
           </div>
-
-          {/* Charts Row */}
-          <div style={styles.chartsRow}>
-
-            {/* Radial Gauges */}
-            <div style={styles.chartCard}>
-              <div style={styles.chartTitle}>⚡ Live Metrics</div>
-              <ResponsiveContainer width="100%" height={200}>
-                <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={radialData} startAngle={180} endAngle={0}>
-                  <RadialBar dataKey="value" cornerRadius={6} background={{ fill: "#f0f0f0" }} />
-                  <Tooltip formatter={(v, n) => [`${v.toFixed(1)}%`, n]} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-              <div style={styles.radialLegend}>
-                {radialData.map((d) => (
-                  <div key={d.name} style={styles.legendItem}>
-                    <span style={{ ...styles.legendDot, background: d.fill }} />
-                    <span style={styles.legendText}>{d.name}: {d.value.toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bar Chart */}
-            <div style={styles.chartCard}>
-              <div style={styles.chartTitle}>📊 Cumulative Stats</div>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {barData.map((entry, i) => (
-                      <rect key={i} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Hydraulics + Location */}
-            <div style={styles.chartCard}>
-              <div style={styles.chartTitle}>🌡️ Hydraulics</div>
-              <div style={styles.gaugeRow}>
-                <GaugeBar label="Oil Temp" value={tempVal} max={120} unit={HydraulicOilTemperature?.TemperatureUnits ?? "°C"} color="#f97316" />
-                <GaugeBar label="Oil Pressure" value={pressureVal} max={400} unit={HydraulicOilPressure?.PressureUnits ?? "bar"} color="#3b82f6" />
-              </div>
-              <div style={styles.chartTitle}>📍 Location</div>
-              <div style={styles.locationBox}>
-                <div style={styles.locRow}><span style={styles.locLabel}>Latitude</span><span style={styles.locVal}>{Location?.Latitude?.toFixed(6) ?? "—"}</span></div>
-                <div style={styles.locRow}><span style={styles.locLabel}>Longitude</span><span style={styles.locVal}>{Location?.Longitude?.toFixed(6) ?? "—"}</span></div>
-                {Location && (
-                  <a href={`https://maps.google.com/?q=${Location.Latitude},${Location.Longitude}`} target="_blank" rel="noreferrer" style={styles.mapBtn}>
-                    🗺️ Open in Maps
-                  </a>
-                )}
-              </div>
-            </div>
+          <div style={styles.infoCard}>
+            <div style={styles.infoIcon}>🖥️</div>
+            <div style={styles.infoLabel}>Machine Status</div>
+            <div style={{ ...styles.infoValue, color: statusColor }}>{MachineStatus?.Status ?? "—"}</div>
+            <div style={styles.infoSub}>{MachineStatus?.datetime ? new Date(MachineStatus.datetime).toLocaleString() : "—"}</div>
           </div>
-
-          {/* Engine + Status Row */}
-          <div style={styles.infoRow}>
-            <div style={styles.infoCard}>
-              <div style={styles.infoIcon}>⚙️</div>
-              <div style={styles.infoLabel}>Engine</div>
-              <div style={{ ...styles.infoValue, color: EngineStatus?.Running ? "#22c55e" : "#ef4444" }}>
-                {EngineStatus?.Running ? "Running" : "Stopped"}
-              </div>
-              <div style={styles.infoSub}>{EngineStatus?.datetime ? new Date(EngineStatus.datetime).toLocaleString() : "—"}</div>
-            </div>
-            <div style={styles.infoCard}>
-              <div style={styles.infoIcon}>🖥️</div>
-              <div style={styles.infoLabel}>Machine Status</div>
-              <div style={{ ...styles.infoValue, color: statusColor }}>{MachineStatus?.Status ?? "—"}</div>
-              <div style={styles.infoSub}>{MachineStatus?.datetime ? new Date(MachineStatus.datetime).toLocaleString() : "—"}</div>
-            </div>
-            <div style={styles.infoCard}>
-              <div style={styles.infoIcon}>📍</div>
-              <div style={styles.infoLabel}>Last Location Update</div>
-              <div style={styles.infoValue}>{Location?.datetime ? new Date(Location.datetime).toLocaleDateString() : "—"}</div>
-              <div style={styles.infoSub}>{Location?.datetime ? new Date(Location.datetime).toLocaleTimeString() : ""}</div>
-            </div>
-            <div style={styles.infoCard}>
-              <div style={styles.infoIcon}>💾</div>
-              <div style={styles.infoLabel}>Software</div>
-              <div style={styles.infoValue}>{Software?.Version ?? "—"}</div>
-              <div style={styles.infoSub}>{Software?.Interface}</div>
-            </div>
+          <div style={styles.infoCard}>
+            <div style={styles.infoIcon}>📍</div>
+            <div style={styles.infoLabel}>Last Location Update</div>
+            <div style={styles.infoValue}>{Location?.datetime ? new Date(Location.datetime).toLocaleDateString() : "—"}</div>
+            <div style={styles.infoSub}>{Location?.datetime ? new Date(Location.datetime).toLocaleTimeString() : ""}</div>
           </div>
+          <div style={styles.infoCard}>
+            <div style={styles.infoIcon}>💾</div>
+            <div style={styles.infoLabel}>Software</div>
+            <div style={styles.infoValue}>{Software?.Version ?? "—"}</div>
+            <div style={styles.infoSub}>{Software?.Interface}</div>
+          </div>
+        </div>
 
-          {/* Caution Messages */}
-          {CautionMessages?.CautionDescription?.length > 0 && (
-            <div style={styles.cautionSection}>
-              <div style={styles.cautionHeader}>⚠️ Caution Messages <span style={styles.cautionCount}>{CautionMessages.CautionDescription.length}</span></div>
-              <div style={styles.timeline}>
-                {CautionMessages.CautionDescription.map((c, i) => (
-                  <div key={i} style={styles.timelineItem}>
-                    <div style={styles.timelineDot} />
-                    <div style={styles.timelineContent}>
-                      <div style={styles.timelineTop}>
-                        <span style={styles.cautionId}>#{c.Identifier}</span>
-                        <span style={styles.cautionDate}>{c.datetime}</span>
-                      </div>
-                      <div style={styles.cautionDesc}>{c.Description}</div>
+        {/* Caution Messages */}
+        {CautionMessages?.CautionDescription?.length > 0 && (
+          <div style={styles.cautionSection}>
+            <div style={styles.cautionHeader}>⚠️ Caution Messages <span style={styles.cautionCount}>{CautionMessages.CautionDescription.length}</span></div>
+            <div style={styles.timeline}>
+              {CautionMessages.CautionDescription.map((c, i) => (
+                <div key={i} style={styles.timelineItem}>
+                  <div style={styles.timelineDot} />
+                  <div style={styles.timelineContent}>
+                    <div style={styles.timelineTop}>
+                      <span style={styles.cautionId}>#{c.Identifier}</span>
+                      <span style={styles.cautionDate}>{c.datetime}</span>
                     </div>
+                    <div style={styles.cautionDesc}>{c.Description}</div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -204,8 +202,7 @@ function GaugeBar({ label, value, max, unit, color }) {
 }
 
 const styles = {
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 },
-  modal: { background: "#f8fafc", borderRadius: 16, width: "100%", maxWidth: 1000, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" },
+  panel: { background: "#f8fafc", borderRadius: 16, width: "100%", boxShadow: "0 4px 24px rgba(0,0,0,0.10)", border: "1px solid #e5e9ef" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 28px", background: "#0178d2", borderRadius: "16px 16px 0 0" },
   headerLeft: {},
   headerRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 },
