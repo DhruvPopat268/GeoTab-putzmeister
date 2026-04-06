@@ -20,11 +20,9 @@ window.geotab.addin.putzmeister = function (elt, service) {
   };
 };
 
-// Dev: render directly into #root when not inside MyGeotab
-if (import.meta.env.DEV) {
-  createRoot(document.getElementById("root")).render(
-    <StrictMode>
-      <App api={null} state={null} />
-    </StrictMode>
-  );
-}
+// Render into #root when opened directly (dev or Vercel preview)
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <App api={null} state={null} />
+  </StrictMode>
+);
