@@ -1,0 +1,15 @@
+{
+    "name": "putzmeister",
+    "supportEmail": "it@putzmeister.com",
+    "version": "1.0.0",
+    "items": [
+        {
+            "url": "https://YOUR_HOSTED_URL/index.html",
+            "path": "ActivityLink/",
+            "menuName": {
+                "en": "Putzmeister"
+            }
+        }
+    ],
+    "isSigned": false
+}
