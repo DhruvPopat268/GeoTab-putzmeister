@@ -11,7 +11,16 @@ window.geotab.addin.putzmeister = function (elt) {
   return {
     initialize(api, state, initializeCallback) {
       geotabMounted = true;
-      createRoot(elt).render(
+
+      console.log("elt received:", elt);
+      console.log("elt type:", typeof elt);
+      console.log("elt instanceof Element:", elt instanceof Element);
+
+      // elt from GeoTab is sometimes a selector string or empty — use #root as fallback
+      const container =
+        elt instanceof Element ? elt : document.getElementById("root");
+
+      createRoot(container).render(
         <StrictMode>
           <App api={api} state={state} />
         </StrictMode>
@@ -23,7 +32,7 @@ window.geotab.addin.putzmeister = function (elt) {
   };
 };
 
-// Fallback: render into #root only when opened directly in browser
+// Fallback for direct browser visit
 setTimeout(() => {
   if (!geotabMounted) {
     const rootEl = document.getElementById("root");
