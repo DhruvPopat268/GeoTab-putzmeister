@@ -5,9 +5,12 @@ import App from "./App";
 window.geotab = window.geotab || {};
 window.geotab.addin = window.geotab.addin || {};
 
-window.geotab.addin.putzmeister = function (elt, service) {
+let geotabMounted = false;
+
+window.geotab.addin.putzmeister = function (elt) {
   return {
     initialize(api, state, initializeCallback) {
+      geotabMounted = true;
       createRoot(elt).render(
         <StrictMode>
           <App api={api} state={state} />
@@ -15,14 +18,21 @@ window.geotab.addin.putzmeister = function (elt, service) {
       );
       initializeCallback();
     },
-    focus(api, state) {},
+    focus() {},
     blur() {},
   };
 };
 
-// Render into #root when opened directly (dev or Vercel preview)
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <App api={null} state={null} />
-  </StrictMode>
-);
+// Fallback: render into #root only when opened directly in browser
+setTimeout(() => {
+  if (!geotabMounted) {
+    const rootEl = document.getElementById("root");
+    if (rootEl) {
+      createRoot(rootEl).render(
+        <StrictMode>
+          <App api={null} state={null} />
+        </StrictMode>
+      );
+    }
+  }
+}, 300);
