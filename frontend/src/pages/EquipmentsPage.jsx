@@ -49,7 +49,7 @@ export default function EquipmentsPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button style={{ ...styles.refreshBtn, opacity: loading ? 0.6 : 1 }} onClick={fetchData} disabled={loading}>
-            <span style={{ display: "inline-block", animation: loading ? "spin 0.75s linear infinite" : "none" }}>🔄</span> Refresh
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
           <div style={styles.headerBadge}>{equipments.length} Equipment{equipments.length !== 1 ? "s" : ""}</div>
         </div>
@@ -145,7 +145,7 @@ const styles = {
   mapLink: { color: "#0178d2", textDecoration: "none", fontSize: 12 },
   viewBtn: { background: "#0178d2", color: "#fff", border: "none", padding: "6px 16px", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 600 },
   pagination: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, padding: "12px 24px 24px" },
-  refreshBtn: { background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", padding: "6px 14px", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 },
+  refreshBtn: { background: "#222", color: "#fff", border: "none", padding: "6px 16px", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 600 },
   pageBtn: { background: "#fff", color: "#0178d2", border: "1px solid #0178d2", padding: "6px 16px", borderRadius: 5, cursor: "pointer", fontSize: 12, fontWeight: 600 },
   pageNum: { fontSize: 13, fontWeight: 600, color: "#555", padding: "0 4px" },
   spinnerWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 48, gap: 14 },
